@@ -157,6 +157,14 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.root / 'meowfetch/old.txt').read_text(), 'old installation')
         self.assert_launcher_works()
 
+    def test_install_refuses_to_replace_an_unrelated_launcher(self):
+        self.launcher.parent.mkdir(parents=True)
+        self.launcher.write_text('#!/bin/sh\necho unrelated\n')
+        with self.assertRaisesRegex(ValueError, 'unrecognized launcher'):
+            self.install()
+        self.assertEqual(self.launcher.read_text(), '#!/bin/sh\necho unrelated\n')
+        self.assertFalse(self.root.exists())
+
     def test_download_failure_leaves_working_installation(self):
         self.install()
         with mock.patch.object(installer, 'urlopen', side_effect=OSError('offline')), contextlib.redirect_stderr(io.StringIO()) as error:
@@ -191,6 +199,15 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse((self.root / 'meowfetch').exists())
         self.assertEqual((self.root / 'personal.txt').read_text(), 'keep')
 
+    def test_failed_package_removal_keeps_the_launcher_working(self):
+        self.install()
+        with mock.patch.object(installer.shutil, 'rmtree',
+                               side_effect=PermissionError('locked package')):
+            with self.assertRaises(PermissionError):
+                installer.uninstall()
+        self.assert_launcher_works()
+        self.assertTrue((self.root / 'meowfetch').is_dir())
+
     def test_uninstall_clean_install_removes_root(self):
         self.install()
         installer.uninstall()
@@ -203,6 +220,13 @@ class InstallerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Git checkout'):
             installer.uninstall()
         self.assert_launcher_works()
+
+    def test_uninstall_refuses_an_unmarked_installation_without_our_launcher(self):
+        (self.root / 'meowfetch').mkdir(parents=True)
+        (self.root / 'meowfetch/__main__.py').write_text('personal program')
+        with self.assertRaisesRegex(ValueError, 'unrecognized installation'):
+            installer.uninstall()
+        self.assertTrue((self.root / 'meowfetch/__main__.py').is_file())
 
     def test_install_refuses_unrelated_directory(self):
         self.root.mkdir(parents=True)

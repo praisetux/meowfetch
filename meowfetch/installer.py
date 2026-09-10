@@ -15,6 +15,7 @@ import zipfile
 ARCHIVE_URL = 'https://github.com/praisetux/meowfetch/archive/refs/heads/main.zip'
 MAX_ARCHIVE_BYTES = 32 * 1024 * 1024
 MAX_EXTRACTED_BYTES = 64 * 1024 * 1024
+MANAGED_MARKER = '.meowfetch-managed'
 
 
 def copy_limited(incoming, output, limit, message):
@@ -74,6 +75,17 @@ def launcher_text(library):
     return f'#!/bin/sh\nexec {shlex.quote(sys.executable)} -c {shlex.quote(code)} "$@"\n'
 
 
+def launcher_is_managed(launcher):
+    """Recognize launchers created by current and earlier installers."""
+    if not launcher.exists():
+        return False
+    try:
+        contents = launcher.read_text(encoding='utf-8')
+    except (OSError, UnicodeError):
+        return False
+    return 'from meowfetch.__main__ import cli; cli()' in contents
+
+
 def path_help(launcher):
     print(f'Run now: {shlex.quote(str(launcher))}' if platform.system() != 'Windows'
           else f'Run now: "{launcher}"')
@@ -99,6 +111,8 @@ def install(source=None):
     root, launcher = locations()
     if root.is_symlink() or launcher.is_symlink():
         raise ValueError('Installation paths must not be symbolic links')
+    if launcher.exists() and not launcher_is_managed(launcher):
+        raise ValueError(f'Refusing to replace an unrecognized launcher: {launcher}')
     if root.exists() and not (root / 'meowfetch/__main__.py').is_file():
         raise ValueError(f'Refusing to replace an unrecognized directory: {root}')
     root.parent.mkdir(parents=True, exist_ok=True)
@@ -129,6 +143,7 @@ def install(source=None):
                     shutil.copy2(item, target, follow_symlinks=False)
         shutil.copytree(source, stage / 'meowfetch',
                         ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+        (stage / MANAGED_MARKER).write_text('meowfetch installer\n', encoding='utf-8')
         check = subprocess.run(
             [sys.executable, '-I', '-c',
              'import sys; sys.path.insert(0, sys.argv[1]); '
@@ -179,11 +194,15 @@ def uninstall():
         raise ValueError('Installation paths must not be symbolic links')
     if not (root / 'meowfetch/__main__.py').is_file():
         raise ValueError(f'No managed installation found at {root}')
+    if not (root / MANAGED_MARKER).is_file() and not launcher_is_managed(launcher):
+        raise ValueError(f'Refusing to remove an unrecognized installation: {root}')
     if (root / '.git').exists():
         raise ValueError('This installation is a Git checkout; update first to preserve it in a backup')
     # Leave extra files, caches and migration backups alone.
-    launcher.unlink(missing_ok=True)
+    # Keep the command usable if package removal fails partway through.
     shutil.rmtree(root / 'meowfetch')
+    launcher.unlink(missing_ok=True)
+    (root / MANAGED_MARKER).unlink(missing_ok=True)
     if not any(root.iterdir()):
         root.rmdir()
     print('Uninstalled meowfetch. Cached data and any migration backups were kept.')
