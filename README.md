@@ -1,30 +1,31 @@
 # meowfetch
 
-Hi, this is just a small project I've made whilst experiementing with agentic coding. This project is not something to be taken seriously.
+Hi, this is a small project I made while experimenting with agentic coding. It
+is not intended to be taken too seriously.
 
-Meowfetch is a fetch utility with a pawesome twist! When ran it will display one of several cats, along side system information.
+Meowfetch is a fetch utility with a pawesome twist. It displays one of several
+cats alongside information about your system.
 
 ![preview](meowfetch.png)
 
----
-requirements
+## Requirements
 
 - Python 3.9 or newer
-- curl (for the online installer)
+- curl for the Linux/macOS online installer
 
-No Git, pip, or third-party Python packages are required.
+Linux, macOS, and Windows are supported. Git, pip, administrator access, and
+third-party Python packages are not required.
 
----
-installation
+## Installation
 
-## Linux / macOS
+### Linux and macOS
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/praisetux/meowfetch/main/install.sh | sh
 ```
 
-The installer downloads the latest source archive from GitHub's `main` branch,
-checks that the application starts, and installs it for your user. No sudo is needed.
+The installer downloads the latest source archive, checks that Meowfetch starts,
+and installs it for your user. It does not modify your shell configuration.
 
 Run it immediately with:
 
@@ -38,68 +39,108 @@ If `meowfetch` isn't found, make it available in the current bash/zsh terminal:
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-For future terminals, add that line **once** to `~/.bashrc` (bash) or `~/.zshrc`
-(zsh). For fish, run `fish_add_path "$HOME/.local/bin"`. The installer also prints
-instructions for your shell; it does not edit your shell configuration.
+For future terminals, add that line **once** to `~/.bashrc` for bash or
+`~/.zshrc` for zsh. For fish, run:
 
----
-manual install
+```fish
+fish_add_path "$HOME/.local/bin"
+```
 
-Download and extract the repository ZIP from GitHub, open a terminal in the
-extracted folder, and run:
+### Windows
+
+1. Download the [repository ZIP](https://github.com/praisetux/meowfetch/archive/refs/heads/main.zip).
+2. Extract it and open PowerShell in the extracted folder.
+3. Install Meowfetch for your Windows user:
+
+```powershell
+py .\meowfetch.py --install
+```
+
+If the Python launcher is unavailable, use `python` instead of `py`. The
+installer prints the installed command and tells you which folder to add to your
+user `Path`. After adding it, open a new terminal and run `meowfetch`.
+
+You can also run it directly without changing `Path`:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\meowfetch\meowfetch.cmd"
+```
+
+### Install from a local copy
+
+From an extracted source archive or Git checkout, run:
 
 ```bash
 python3 meowfetch.py --install
 ```
 
-This uses the same installer as the online command. After installation, the
-extracted folder can be removed. On Windows, use `py meowfetch.py --install`;
-the installer prints the launcher location and user PATH instructions.
+On Windows, use `py meowfetch.py --install`. This installs the files from the
+local copy using the same checks as the online installer. The source folder can
+then be removed.
 
----
-colours
+## Usage
 
-use `--color` / `-c` to set the accent colour:
+Run Meowfetch with:
+
+```bash
+meowfetch
+```
+
+### Colours
+
+Use `--color` or `-c` to set the accent colour:
 
 ```bash
 meowfetch --color pink
 meowfetch -c bright_cyan
 ```
 
-available: `red`, `green`, `yellow`, `orange`, `blue`, `magenta`, `cyan`, `white`, `pink`, `bright_red`, `bright_green`, `bright_blue`, `bright_cyan`
+Available colours: `red`, `green`, `yellow`, `orange`, `blue`, `magenta`,
+`cyan`, `white`, `pink`, `bright_red`, `bright_green`, `bright_blue`, and
+`bright_cyan`.
 
-default is `cyan`.
+The default is `cyan`.
 
----
-updating
+## Updating
 
 ```bash
 meowfetch --update
 ```
 
-Or re-run the online install command. Both download the latest `main` archive;
-local installation with `--install` uses the files in that local copy instead.
-The new package is staged and checked before replacing the installed copy.
+This works on Linux, macOS, and Windows. On Linux and macOS, re-running the
+online installation command also updates Meowfetch. Updates download the latest
+`main` archive, stage it, and check it before replacing the installed copy.
 
 When migrating from the old Git-based installer, the entire previous checkout
 (including local edits) is kept in a `meowfetch-backup-*` directory beside the
 installation. The installer prints its location. Updates replace application
 code, so make your own code changes in a separate development checkout.
 
----
-uninstalling
+## Uninstalling
 
 ```bash
 meowfetch --uninstall
 ```
 
-This removes the installed package and launcher. Cached information, migration
-backups, and unrelated files are kept. If the command is not on PATH, use
-`~/.local/bin/meowfetch --uninstall` on Linux/macOS.
+This works on all supported platforms and removes the installed package and
+launcher. Cached information, migration backups, and unrelated files are kept.
+If the command is not on your PATH, use one of these commands:
 
-The Linux/macOS installation uses `~/.local/share/meowfetch` for the application
-and `~/.local/bin/meowfetch` for the launcher.
+```bash
+~/.local/bin/meowfetch --uninstall
+```
 
----
-# AI notice
+```powershell
+& "$env:LOCALAPPDATA\Programs\meowfetch\meowfetch.cmd" --uninstall
+```
+
+## Installed locations
+
+| Platform | Application files | Command |
+| --- | --- | --- |
+| Linux/macOS | `~/.local/share/meowfetch` | `~/.local/bin/meowfetch` |
+| Windows | `%LOCALAPPDATA%\Programs\meowfetch\lib` | `%LOCALAPPDATA%\Programs\meowfetch\meowfetch.cmd` |
+
+## AI notice
+
 This project contains AI generated code.
