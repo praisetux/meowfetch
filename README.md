@@ -40,11 +40,7 @@ export PATH="$HOME/.local/bin:$PATH"
 ```
 
 For future terminals, add that line **once** to `~/.bashrc` for bash or
-`~/.zshrc` for zsh. For fish, run:
-
-```fish
-fish_add_path "$HOME/.local/bin"
-```
+`~/.zshrc`
 
 ### Windows
 
