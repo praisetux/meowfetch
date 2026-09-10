@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Meowfetch — a fetch script with a pawesome twist"""
 
-import argparse, os, random, sys, time
+import argparse, os, random, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
@@ -148,12 +148,21 @@ def cli():
         metavar='NAME',
         help=f'colour scheme, default cyan ({", ".join(_COLOURS)})',
     )
-    parser.add_argument('--install', action='store_true', help='install launcher to ~/.local/bin')
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument('--install', action='store_true', help='install this local copy')
+    actions.add_argument('--update', action='store_true', help='download and install the latest version')
+    actions.add_argument('--uninstall', action='store_true', help='remove the user installation')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     args = parser.parse_args()
 
-    if args.install:
-        install()
+    if args.update or args.uninstall:
+        from .installer import main as manage
+        raise SystemExit(manage(['update' if args.update else 'uninstall']))
+    elif args.install:
+        try:
+            install()
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            parser.exit(1, f'error: {error}\n')
     else:
         main(args.color)
 

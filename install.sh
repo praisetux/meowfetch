@@ -1,12 +1,14 @@
 #!/bin/sh
-set -e
+set -eu
 
-DEST="$HOME/.local/share/meowfetch"
-BIN="$HOME/.local/bin"
+case "${1:-install}" in
+  install|update|uninstall) action="${1:-install}" ;;
+  -h|--help) echo 'Usage: sh install.sh [install|update|uninstall]'; exit 0 ;;
+  *) echo 'Usage: sh install.sh [install|update|uninstall]' >&2; exit 2 ;;
+esac
 
-# Require Python 3.9+
 PYTHON=""
-for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
+for candidate in python3 python3.14 python3.13 python3.12 python3.11 python3.10 python3.9; do
   if command -v "$candidate" >/dev/null 2>&1 \
       && "$candidate" -c 'import sys; raise SystemExit(sys.version_info < (3, 9))' 2>/dev/null; then
     PYTHON="$candidate"
@@ -14,38 +16,25 @@ for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3;
   fi
 done
 if [ -z "$PYTHON" ]; then
-  echo "error: Python 3.9 or newer is required but was not found" >&2
+  echo 'error: Python 3.9 or newer is required but was not found' >&2
+  exit 1
+fi
+# Removing an installation needs neither the network nor a fresh copy of the
+# remote installer; the installed one already knows what it put where.
+INSTALLED="${HOME:-}/.local/share/meowfetch/meowfetch/installer.py"
+if [ "$action" = uninstall ] && [ -f "$INSTALLED" ]; then
+  exec "$PYTHON" "$INSTALLED" uninstall
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo 'error: curl is required to download the installer' >&2
   exit 1
 fi
 
-# Require Git, which is used to clone and update the checkout below
-if ! command -v git >/dev/null 2>&1; then
-  echo "error: Git is required but was not found" >&2
-  echo "install Git with your package manager, then run this installer again" >&2
-  exit 1
-fi
-
-if [ -d "$DEST/.git" ]; then
-  if [ -n "$(git -C "$DEST" status --porcelain)" ]; then
-    echo "error: $DEST contains local changes; update stopped to preserve them" >&2
-    exit 1
-  fi
-  git -C "$DEST" remote set-url origin https://github.com/praisetux/meowfetch
-  git -C "$DEST" pull -q --ff-only origin main
-else
-  git clone -q https://github.com/praisetux/meowfetch "$DEST"
-fi
-
-mkdir -p "$BIN"
-printf '#!/bin/sh\nexec %s -c "import sys; sys.path.insert(0, '"'"'%s'"'"'); from meowfetch.__main__ import cli; cli()" "$@"\n' "$PYTHON" "$DEST" > "$BIN/meowfetch"
-chmod +x "$BIN/meowfetch"
-echo "installed → $BIN/meowfetch"
-
-case ":$PATH:" in
-  *":$BIN:"*) ;;
-  *)
-    RC="$HOME/.bashrc"
-    [ "$(basename "$SHELL")" = "zsh" ] && RC="$HOME/.zshrc"
-    printf '\nadd to PATH:\n  echo '"'"'export PATH="$HOME/.local/bin:$PATH"'"'"' >> %s\n' "$RC"
-    ;;
-esac
+STAGING=$(mktemp -d)
+trap 'rm -rf "$STAGING"' EXIT
+trap 'exit 1' HUP INT TERM
+curl -fsSL --connect-timeout 15 --max-time 60 \
+  https://raw.githubusercontent.com/praisetux/meowfetch/main/meowfetch/installer.py \
+  -o "$STAGING/installer.py"
+"$PYTHON" "$STAGING/installer.py" "$action"

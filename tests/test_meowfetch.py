@@ -112,6 +112,7 @@ class InstallTests(unittest.TestCase):
             package.mkdir(parents=True)
             (package / '__init__.py').write_text('', encoding='utf-8')
             (package / '__main__.py').write_text('def cli(): pass\n', encoding='utf-8')
+            (package / 'installer.py').write_text('', encoding='utf-8')
             fake_utils = package / 'utils.py'
             fake_utils.write_text('', encoding='utf-8')
             home = root / 'home'
@@ -128,21 +129,6 @@ class InstallTests(unittest.TestCase):
             self.assertTrue(launcher.is_file())
             self.assertNotIn(str(source), launcher.read_text(encoding='utf-8'))
 
-    def test_installer_reports_a_missing_git_dependency(self):
-        script = Path(__file__).resolve().parent.parent / 'install.sh'
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            stub_bin = home / 'bin'
-            stub_bin.mkdir()
-            (stub_bin / 'python3').symlink_to(sys.executable)
-            result = subprocess.run(
-                ['/bin/sh', str(script)],
-                capture_output=True, text=True, timeout=60,
-                env={'HOME': str(home), 'PATH': str(stub_bin), 'SHELL': '/bin/sh'},
-            )
-            self.assertEqual(result.returncode, 1)
-            self.assertIn('Git is required', result.stderr)
-            self.assertFalse((home / '.local').exists())
 
 
 if __name__ == '__main__':

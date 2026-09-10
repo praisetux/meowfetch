@@ -1,4 +1,4 @@
-import json, os, platform, shlex, shutil, subprocess, tempfile
+import json, os, platform, shutil, subprocess, tempfile
 from datetime import timedelta
 
 _SYS      = platform.system()
@@ -97,55 +97,7 @@ def save_cache(data):
 
 
 def install():
-    import sys
-    project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    source_package = os.path.join(project_dir, 'meowfetch')
-
-    if _SYS == 'Windows':
-        install_dir = os.path.join(
-            os.environ.get('LOCALAPPDATA', os.path.expanduser('~')),
-            'Programs', 'meowfetch')
-        library_dir = os.path.join(install_dir, 'lib')
-    else:
-        install_dir = os.path.expanduser('~/.local/share/meowfetch')
-        library_dir = install_dir
-
-    os.makedirs(library_dir, exist_ok=True)
-    installed_package = os.path.join(library_dir, 'meowfetch')
-    if os.path.realpath(source_package) != os.path.realpath(installed_package):
-        shutil.copytree(
-            source_package, installed_package, dirs_exist_ok=True,
-            ignore=shutil.ignore_patterns('__pycache__', '*.pyc'),
-        )
-    python_code = (
-        f'import sys; sys.path.insert(0, {repr(library_dir)}); '
-        f'from meowfetch.__main__ import cli; cli()'
-    )
-
-    if _SYS == 'Windows':
-        dest = os.path.join(install_dir, 'meowfetch.cmd')
-        with open(dest, 'w') as f:
-            f.write(
-                f'@echo off\r\n'
-                f'"{sys.executable}" -c "{python_code}" %*\r\n'
-            )
-        print(f'installed -> {dest}')
-        path_dirs = os.environ.get('PATH', '').split(';')
-        if install_dir.lower() not in [p.lower() for p in path_dirs]:
-            print(f'\nadd to PATH:\n  setx PATH "%PATH%;{install_dir}"')
-    else:
-        local_bin = os.path.expanduser('~/.local/bin')
-        os.makedirs(local_bin, exist_ok=True)
-        dest = os.path.join(local_bin, 'meowfetch')
-        with open(dest, 'w') as f:
-            f.write(
-                '#!/bin/sh\n'
-                f'exec {shlex.quote(sys.executable)} -c '
-                f'{shlex.quote(python_code)} "$@"\n'
-            )
-        os.chmod(dest, os.stat(dest).st_mode | 0o111)
-        print(f'installed -> {dest}')
-        if local_bin not in os.environ.get('PATH', '').split(':'):
-            shell = os.environ.get('SHELL', '')
-            rc = '~/.zshrc' if 'zsh' in shell else '~/.bashrc'
-            print(f'\nadd to PATH:\n  echo \'export PATH="$HOME/.local/bin:$PATH"\' >> {rc}')
+    # Compatibility entry point for callers of the original installer.
+    from pathlib import Path
+    from .installer import install as install_package
+    install_package(Path(__file__).resolve().parent)
