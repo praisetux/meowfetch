@@ -1,8 +1,4 @@
 # meowfetch
-
-Hi, this is a small project I made while experimenting with agentic coding. It
-is not intended to be taken too seriously.
-
 Meowfetch is a fetch utility with a pawesome twist. It displays one of several
 cats alongside information about your system.
 
